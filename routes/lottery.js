@@ -2,6 +2,8 @@ var express = require('express');
 
 var request = require("request");
 
+var mcache = require('memory-cache');
+
 var { responseClient } = require("../utils/responseUtil");
 
 
@@ -16,52 +18,60 @@ const appkey = 'ff693bc834d8257aa7f126cf66b73e1b';
 router.get('/getMenu', function (req, res, next) {
     let urlPath = '/types';
 
-    request(submitUrl + urlPath + '?key=' + appkey, function (error, response, body) {
-        if (error) {
-            // res.send(error);
-        }
-        if (body) {
-            body = JSON.parse(body);
-            let menuData = {};
-            let allTypeList = [];
-            if (body.result) {
-                let length = body.result.length;
-                for (let i = 0; i < length; i++) {
-                    menuData[body.result[i].lottery_id] = body.result[i];
-                    allTypeList.push(body.result[i].lottery_id);
-                }
-                menuData['menu_lotteryResults'] = {
-                    name: '开奖结果',
-                    url: '',
-                    subMenu: [...allTypeList]
-                }
-                menuData['menu_winningCheck'] = {
-                    name: '中奖查询',
-                    url: '',
-                    subMenu: [...allTypeList]
-                }
-                menuData['menu_calculate'] = {
-                    name: '下期推算',
-                    url: '',
-                    subMenu: [...allTypeList]
-                }
-                menuData['menu_report'] = {
-                    name: '彩票报表',
-                    url: '',
-                    subMenu: [...allTypeList]
-                }
+    let key = '__express__' + req.originalUrl || req.url
+    let cachedBody = mcache.get(key)
+    if (cachedBody) {
+        responseClient(res, JSON.stringify(cachedBody));
+        return;
+    } else {
+        request(submitUrl + urlPath + '?key=' + appkey, function (error, response, body) {
+            if (error) {
+                // res.send(error);
             }
-            let menuList = [
-                'menu_lotteryResults',
-                'menu_winningCheck',
-                'menu_calculate',
-                'menu_report'
-            ];
+            if (body) {
+                body = JSON.parse(body);
+                let menuData = {};
+                let allTypeList = [];
+                if (body.result) {
+                    let length = body.result.length;
+                    for (let i = 0; i < length; i++) {
+                        menuData[body.result[i].lottery_id] = body.result[i];
+                        allTypeList.push(body.result[i].lottery_id);
+                    }
+                    menuData['menu_lotteryResults'] = {
+                        name: '开奖结果',
+                        url: 'results',
+                        subMenu: [...allTypeList]
+                    }
+                    menuData['menu_winningCheck'] = {
+                        name: '中奖查询',
+                        url: 'results',
+                        subMenu: [...allTypeList]
+                    }
+                    menuData['menu_calculate'] = {
+                        name: '下期推算',
+                        url: 'results',
+                        subMenu: [...allTypeList]
+                    }
+                    menuData['menu_report'] = {
+                        name: '彩票报表',
+                        url: 'results',
+                        subMenu: [...allTypeList]
+                    }
+                }
+                let menuList = [
+                    'menu_lotteryResults',
+                    'menu_winningCheck',
+                    'menu_calculate',
+                    'menu_report'
+                ];
 
-            responseClient(res, JSON.stringify({ menuData, menuList }));
-        }
-        //console.log(response.headers);
-    })
+                mcache.put(key, { menuData, menuList });
+                responseClient(res, JSON.stringify({ menuData, menuList }));
+            }
+        });
+    }
+
 
 });
 
@@ -82,7 +92,7 @@ router.get('/queryNewest', function (req, res, next) {
             if (result) {
                 let tempArr = result.lottery_res.split(',');
                 result.lotteryResArr = [];
-                for(let i = 0;i<tempArr.length;i++){
+                for (let i = 0; i < tempArr.length; i++) {
                     result.lotteryResArr.push(tempArr[i].split(''));
                 }
                 result.lotteryMessage = [];
@@ -92,7 +102,7 @@ router.get('/queryNewest', function (req, res, next) {
                 result.lotteryMessage.push(`本期兑奖截止日为${result.lottery_exdate}，逾期作弃奖处理。`);
 
             } else {
-                result = {test:`${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}`};
+                result = { test: `${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}` };
             }
 
             responseClient(res, JSON.stringify(result));
