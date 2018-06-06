@@ -80,35 +80,43 @@ router.get('/getMenu', function (req, res, next) {
 router.get('/queryNewest', function (req, res, next) {
     let urlPath = '/query';
 
-    request(`${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}`, function (error, response, body) {
-        if (error) {
-            // res.send(error);
-        }
-        if (body) {
-            body = JSON.parse(body);
-            let menuData = {};
-            let allTypeList = [];
-            let result = body.result;
-            if (result) {
-                let tempArr = result.lottery_res.split(',');
-                result.lotteryResArr = [];
-                for (let i = 0; i < tempArr.length; i++) {
-                    result.lotteryResArr.push(tempArr[i].split(''));
-                }
-                result.lotteryMessage = [];
-                result.lotteryMessage.push(`开奖日期 : ${result.lottery_date}`);
-                result.lotteryMessage.push(`本期全国销售金额 : ${result.lottery_sale_amount}`);
-                result.lotteryMessage.push(`${result.lottery_pool_amount}元奖金滚入下期奖池。`);
-                result.lotteryMessage.push(`本期兑奖截止日为${result.lottery_exdate}，逾期作弃奖处理。`);
-
-            } else {
-                result = { test: `${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}` };
+    let key = '__express__' + req.originalUrl || req.url
+    let cachedBody = mcache.get(key)
+    if (cachedBody) {
+        responseClient(res, JSON.stringify(cachedBody));
+        return;
+    } else {
+        request(`${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}`, function (error, response, body) {
+            if (error) {
+                // res.send(error);
             }
-
-            responseClient(res, JSON.stringify(result));
-        }
-        //console.log(response.headers);
-    })
+            if (body) {
+                body = JSON.parse(body);
+                let menuData = {};
+                let allTypeList = [];
+                let result = body.result;
+                if (result) {
+                    let tempArr = result.lottery_res.split(',');
+                    result.lotteryResArr = [];
+                    for (let i = 0; i < tempArr.length; i++) {
+                        result.lotteryResArr.push(tempArr[i].split(''));
+                    }
+                    result.lotteryMessage = [];
+                    result.lotteryMessage.push(`开奖日期 : ${result.lottery_date}`);
+                    result.lotteryMessage.push(`本期全国销售金额 : ${result.lottery_sale_amount}`);
+                    result.lotteryMessage.push(`${result.lottery_pool_amount}元奖金滚入下期奖池。`);
+                    result.lotteryMessage.push(`本期兑奖截止日为${result.lottery_exdate}，逾期作弃奖处理。`);
+    
+                } else {
+                    result = { test: `${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}` };
+                }
+    
+                mcache.put(key, result);
+                responseClient(res, JSON.stringify(result));
+            }
+            //console.log(response.headers);
+        });
+    }
 
 });
 
