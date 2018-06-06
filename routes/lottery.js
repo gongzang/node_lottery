@@ -88,7 +88,6 @@ router.get('/queryNewest', function (req, res, next) {
     } else {
         request(`${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}`, function (error, response, body) {
             if (error) {
-                // res.send(error);
             }
             if (body) {
                 body = JSON.parse(body);
@@ -106,15 +105,22 @@ router.get('/queryNewest', function (req, res, next) {
                     result.lotteryMessage.push(`本期全国销售金额 : ${result.lottery_sale_amount}`);
                     result.lotteryMessage.push(`${result.lottery_pool_amount}元奖金滚入下期奖池。`);
                     result.lotteryMessage.push(`本期兑奖截止日为${result.lottery_exdate}，逾期作弃奖处理。`);
-    
+
                 } else {
                     result = { test: `${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}` };
                 }
-    
+
+                result.lottery_no = parseInt(result.lottery_no);
                 mcache.put(key, result);
+                let maxNo = mcache.get(result.lottery_id);
+                if (maxNo) {
+                    result.maxNo = maxNo;
+                } else {
+                    mcache.put(result.lottery_id, result.lottery_no);
+                    result.maxNo = result.lottery_no;
+                }
                 responseClient(res, JSON.stringify(result));
             }
-            //console.log(response.headers);
         });
     }
 
