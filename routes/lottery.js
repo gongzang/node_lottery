@@ -112,6 +112,28 @@ function requestQuerySync(req) {
                     result.lotteryMessage.push(`本期兑奖截止日为${result.lottery_exdate}，逾期作弃奖处理。`);
 
                     result.lottery_no = parseInt(result.lottery_no);
+                    let columns = [];
+                    if(result.lottery_prize){
+                        columns = [
+                            {
+                                title: '奖级',
+                                field: 'prize_name'
+                            },
+                            {
+                                title: '中奖注数',
+                                field: 'prize_num'
+                            },
+                            {
+                                title: '单注奖金',
+                                field: 'prize_amount'
+                            },
+                            {
+                                title: '中奖条件',
+                                field: 'prize_require'
+                            }
+                        ];
+                    }
+                    result.columns = columns;
                 }
                 resolve(result);
             }
