@@ -94,7 +94,6 @@ function requestQuerySync(req) {
         request(`${submitUrl}${urlPath}?key=${appkey}&lottery_id=${req.query.lottery_id}${req.query.lottery_no ? ('&lottery_no=' + req.query.lottery_no) : ''}`, function (error, response, body) {
             if (error) {
             }
-            console.log(body);
             if (body) {
                 body = JSON.parse(body);
                 let menuData = {};
@@ -114,7 +113,6 @@ function requestQuerySync(req) {
 
                     result.lottery_no = parseInt(result.lottery_no);
                 }
-                console.log(result);
                 resolve(result);
             }
         });
@@ -126,16 +124,13 @@ function requestQuerySync(req) {
 /* 获取彩票相应的彩种的最新开奖数据 */
 router.get('/queryNewest', function (req, res, next) {
     let urlPath = '/query';
-    console.log(1);
     let key = '__express__' + req.originalUrl || req.url
     let cachedBody = mcache.get(key)
     if (cachedBody) {
         responseClient(res, JSON.stringify(cachedBody));
         return;
     } else {
-        console.log(req);
         requestQuerySync(req).then(result => {
-            console.log(1);
             mcache.put(key, result);
             let maxNo = mcache.get(result.lottery_id);
             if (maxNo) {
