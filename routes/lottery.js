@@ -32,11 +32,32 @@ router.get('/getMenu', function (req, res, next) {
                 body = JSON.parse(body);
                 let menuData = {};
                 let allTypeList = [];
+                let homeList = {
+                    'name': '彩票',
+                    'children': []
+                };
                 if (body.result) {
                     let length = body.result.length;
                     for (let i = 0; i < length; i++) {
                         menuData[body.result[i].lottery_id] = body.result[i];
                         allTypeList.push(body.result[i].lottery_id);
+                        homeList.children.push({
+                            name: body.result[i].lottery_name,
+                            children: [
+                                {
+                                    name: '1',
+                                    value: 1
+                                },
+                                {
+                                    name: '2',
+                                    value: 2
+                                },
+                                {
+                                    name: '5',
+                                    value: 5
+                                },
+                            ]
+                        })
                     }
                     menuData['menu_lotteryResults'] = {
                         name: '开奖结果',
@@ -66,8 +87,8 @@ router.get('/getMenu', function (req, res, next) {
                     'menu_report'
                 ];
 
-                mcache.put(key, { menuData, menuList });
-                responseClient(res, JSON.stringify({ menuData, menuList }));
+                mcache.put(key, { menuData, menuList, homeList });
+                responseClient(res, JSON.stringify({ menuData, menuList, homeList }));
             }
         });
     }
@@ -113,7 +134,7 @@ function requestQuerySync(req) {
 
                     result.lottery_no = parseInt(result.lottery_no);
                     let columns = [];
-                    if(result.lottery_prize){
+                    if (result.lottery_prize) {
                         columns = [
                             {
                                 title: '奖级',
